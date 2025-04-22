@@ -10,6 +10,10 @@ CORS(app)  # Allow frontend to access backend
 # Load the YOLO model once at the start
 model = YOLO("best.pt")
 
+@app.route('/status', methods=['GET'])
+def status():
+    return jsonify({"message": "Server is running"}), 200
+
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
@@ -40,4 +44,5 @@ def predict():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
+    print("Flask app is starting...")  # Log message to show when app starts
     app.run(debug=True, port=5000)
