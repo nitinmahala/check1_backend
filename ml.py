@@ -7,26 +7,37 @@ from collections import Counter
 app = Flask(__name__)
 CORS(app)  # Allow frontend to access backend
 
+# Load the YOLO model once at the start
 model = YOLO("best.pt")
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    file = request.files['image']
-    img = Image.open(file.stream)
-    results = model.predict(img)
-    boxes = results[0].boxes.data
-    class_names = [model.names[int(cls)] for cls in boxes[:, 5]]
+    try:
+        # Get the uploaded image
+        file = request.files['image']
+        img = Image.open(file.stream)
 
-    count = Counter(class_names)
+        # Perform prediction with YOLO
+        results = model.predict(img)
 
-    # Convert to regular dict and rename keys to match frontend
-    response = {
-        "WBC": count.get("WBC", 0),
-        "RBC": count.get("RBC", 0),
-        "Platelets": count.get("platelets", 0)
-    }
+        # Get the bounding boxes and class names
+        boxes = results[0].boxes.data
+        class_names = [model.names[int(cls)] for cls in boxes[:, 5]]
 
-    return jsonify(response)
+        # Count occurrences of each class
+        count = Counter(class_names)
+
+        # Map the counts to specific blood cells
+        response = {
+            "WBC": count.get("WBC", 0),  # Replace with correct class names if needed
+            "RBC": count.get("RBC", 0),
+            "Platelets": count.get("platelets", 0)  # Adjust if the class name is different
+        }
+
+        return jsonify(response)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
